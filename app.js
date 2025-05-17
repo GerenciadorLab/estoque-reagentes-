@@ -128,18 +128,50 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Gera QR Code para um reagente
     function gerarQRCode(id) {
+        // Limpa o conteúdo anterior
         qrCodeImage.innerHTML = '';
+        document.getElementById('qrReagenteNome').textContent = '';
+        document.getElementById('qrVolumeAtual').textContent = '';
+        document.getElementById('qrReducao').textContent = '';
+        document.getElementById('qrVencimento').textContent = '';
         
-        // URL que será aberta ao escanear o QR Code
-        const url = `${window.location.origin}${window.location.pathname}?use=${id}`;
-        
-        // Cria o QR Code
-        const qr = qrcode(0, 'L');
-        qr.addData(url);
-        qr.make();
-        
-        // Adiciona a imagem ao modal
-        qrCodeImage.innerHTML = qr.createImgTag(6);
+        // Busca os dados do reagente
+        db.collection('reagentes').doc(id).get()
+        .then(doc => {
+            if (doc.exists) {
+                const reagente = doc.data();
+                
+                // Preenche as informações do reagente
+                document.getElementById('qrReagenteNome').textContent = reagente.nome;
+                document.getElementById('qrVolumeAtual').textContent = reagente.volume.toFixed(3);
+                document.getElementById('qrReducao').textContent = reagente.reducao.toFixed(3);
+                
+                // Formata a data de vencimento
+                const dataVencimento = new Date(reagente.vencimento);
+                document.getElementById('qrVencimento').textContent = dataVencimento.toLocaleDateString('pt-BR');
+                
+                // URL que será aberta ao escanear o QR Code
+                const url = `${window.location.origin}${window.location.pathname}?use=${id}`;
+                
+                // Cria o QR Code
+                const qr = qrcode(0, 'L');
+                qr.addData(url);
+                qr.make();
+                
+                // Adiciona a imagem ao modal
+                qrCodeImage.innerHTML = qr.createImgTag(6);
+                
+                // Estiliza a imagem do QR Code
+                const qrImg = qrCodeImage.querySelector('img');
+                qrImg.style.width = '100%';
+                qrImg.style.maxWidth = '300px';
+                qrImg.style.height = 'auto';
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao buscar reagente:', error);
+            qrCodeImage.innerHTML = '<div class="alert alert-danger">Erro ao carregar dados do reagente</div>';
+        });
     }
     
     // Edita um reagente com suporte a decimais

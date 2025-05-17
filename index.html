@@ -86,24 +86,31 @@
         </div>
 
         <!-- Modal para QR Code -->
-        <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">QR Code do Reagente</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <div id="qrCodeImage"></div>
-                        <p class="mt-3">Escaneie este QR code para registrar o uso</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+<div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">QR Code do Reagente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <h4 id="qrReagenteNome" class="mb-3"></h4>
+                <div id="qrCodeImage" class="mb-3"></div>
+                <div class="card">
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Volume atual:</strong> <span id="qrVolumeAtual"></span> ml</p>
+                        <p class="mb-1"><strong>Redução por uso:</strong> <span id="qrReducao"></span> ml</p>
+                        <p class="mb-0"><strong>Vencimento:</strong> <span id="qrVencimento"></span></p>
                     </div>
                 </div>
+                <p class="mt-3 text-muted">Escaneie este QR code para registrar o uso</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
             </div>
         </div>
     </div>
+</div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="firebase-config.js"></script>
