@@ -18,6 +18,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const vencimento = document.getElementById('vencimento').value;
         const reducao = parseFloat(document.getElementById('reducao').value);
         
+        // Validação para números quebrados
+        if (isNaN(volume) || isNaN(reducao)) {
+          alert("Por favor, insira valores numéricos válidos!");
+          return;
+        }
+        
+        // Adiciona com precisão decimal
+        db.collection('reagentes').add({
+          nome: nome,
+          volume: parseFloat(volume.toFixed(3)),
+          volumeInicial: parseFloat(volume.toFixed(3)),
+          vencimento: vencimento,
+          reducao: parseFloat(reducao.toFixed(3)),
+          dataCadastro: new Date().toISOString()
+        })
+        
         // Adiciona ao Firebase
         db.collection('reagentes').add({
             nome: nome,
@@ -220,33 +236,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const useParam = urlParams.get('use');
     
     if (useParam) {
-        // Reduz o volume do reagente
         db.collection('reagentes').doc(useParam).get()
         .then(doc => {
-            if (doc.exists) {
-                const reagente = doc.data();
-                const novoVolume = reagente.volume - reagente.reducao;
-                
-                if (novoVolume >= 0) {
-                    db.collection('reagentes').doc(useParam).update({
-                        volume: novoVolume
-                    })
-                    .then(() => {
-                        alert(`Uso de ${reagente.reducao} ml registrado para ${reagente.nome}. Volume restante: ${novoVolume.toFixed(2)} ml`);
-                        // Remove o parâmetro da URL sem recarregar a página
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                    })
-                    .catch(error => {
-                        console.error('Erro ao atualizar volume: ', error);
-                    });
-                } else {
-                    alert('Volume insuficiente para uso!');
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                }
+          if (doc.exists) {
+            const reagente = doc.data();
+            const novoVolume = parseFloat((reagente.volume - reagente.reducao).toFixed(3));
+            
+            if (novoVolume >= 0) {
+              db.collection('reagentes').doc(useParam).update({
+                volume: novoVolume
+              })
+              .then(() => {
+                alert(`Uso de ${reagente.reducao.toFixed(3)} ml registrado para ${reagente.nome}. Volume restante: ${novoVolume.toFixed(3)} ml`);
+                window.history.replaceState({}, document.title, window.location.pathname);
+              });
+            } else {
+              alert('Volume insuficiente para uso!');
+              window.history.replaceState({}, document.title, window.location.pathname);
             }
-        })
-        .catch(error => {
-            console.error('Erro ao buscar reagente: ', error);
+          }
         });
-    }
+      }
 });
