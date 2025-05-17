@@ -5,11 +5,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const qrCodeImage = document.getElementById('qrCodeImage');
     const reagenteModal = new bootstrap.Modal(document.getElementById('reagenteModal'));
     const qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
-
+    
     // Carrega os reagentes quando a página é carregada
     carregarReagentes();
-
-    // Adiciona um novo reagente
+    
+    // Adiciona um novo reagente com suporte a decimais
     reagenteForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -18,29 +18,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const vencimento = document.getElementById('vencimento').value;
         const reducao = parseFloat(document.getElementById('reducao').value);
         
-        // Validação para números quebrados
+        // Validação para números decimais
         if (isNaN(volume) || isNaN(reducao)) {
-          alert("Por favor, insira valores numéricos válidos!");
-          return;
+            alert("Por favor, insira valores numéricos válidos!");
+            return;
         }
-        
-        // Adiciona com precisão decimal
-        db.collection('reagentes').add({
-          nome: nome,
-          volume: parseFloat(volume.toFixed(3)),
-          volumeInicial: parseFloat(volume.toFixed(3)),
-          vencimento: vencimento,
-          reducao: parseFloat(reducao.toFixed(3)),
-          dataCadastro: new Date().toISOString()
-        })
+
+        // Garante 3 casas decimais
+        const volumeFormatado = parseFloat(volume.toFixed(3));
+        const reducaoFormatada = parseFloat(reducao.toFixed(3));
         
         // Adiciona ao Firebase
         db.collection('reagentes').add({
             nome: nome,
-            volume: volume,
-            volumeInicial: volume,
+            volume: volumeFormatado,
+            volumeInicial: volumeFormatado,
             vencimento: vencimento,
-            reducao: reducao,
+            reducao: reducaoFormatada,
             dataCadastro: new Date().toISOString()
         })
         .then(() => {
@@ -80,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 row.innerHTML = `
                     <td>${reagente.nome}</td>
-                    <td>${reagente.volume.toFixed(2)} / ${reagente.volumeInicial.toFixed(2)} ml</td>
+                    <td>${reagente.volume.toFixed(3)} / ${reagente.volumeInicial.toFixed(3)} ml</td>
                     <td>${dataFormatada} ${vencido ? '(Vencido)' : ''}</td>
                     <td>
                         <button class="btn btn-sm btn-info qr-btn" data-id="${id}">Ver QR Code</button>
@@ -148,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
         qrCodeImage.innerHTML = qr.createImgTag(6);
     }
     
-    // Edita um reagente
+    // Edita um reagente com suporte a decimais
     function editarReagente(id) {
         db.collection('reagentes').doc(id).get()
         .then(doc => {
@@ -164,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="mb-3">
                             <label for="editVolume" class="form-label">Volume Total (ml)</label>
-                            <input type="number" step="0.01" class="form-control" id="editVolume" value="${reagente.volumeInicial}" required>
+                            <input type="number" step="0.001" class="form-control" id="editVolume" value="${reagente.volumeInicial}" required>
                         </div>
                         <div class="mb-3">
                             <label for="editVencimento" class="form-label">Data de Vencimento</label>
@@ -172,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="mb-3">
                             <label for="editReducao" class="form-label">Volume a reduzir por uso (ml)</label>
-                            <input type="number" step="0.01" class="form-control" id="editReducao" value="${reagente.reducao}" required>
+                            <input type="number" step="0.001" class="form-control" id="editReducao" value="${reagente.reducao}" required>
                         </div>
                         <button type="submit" class="btn btn-primary">Salvar Alterações</button>
                     </form>
@@ -189,17 +183,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     const novoVencimento = document.getElementById('editVencimento').value;
                     const novoReducao = parseFloat(document.getElementById('editReducao').value);
                     
+                    // Validação para números decimais
+                    if (isNaN(novoVolume) || isNaN(novoReducao)) {
+                        alert("Por favor, insira valores numéricos válidos!");
+                        return;
+                    }
+                    
+                    // Formata para 3 casas decimais
+                    const novoVolumeFormatado = parseFloat(novoVolume.toFixed(3));
+                    const novoReducaoFormatada = parseFloat(novoReducao.toFixed(3));
+                    
                     // Calcula a diferença de volume para ajustar o volume atual
-                    const diferencaVolume = novoVolume - reagente.volumeInicial;
-                    const novoVolumeAtual = reagente.volume + diferencaVolume;
+                    const diferencaVolume = novoVolumeFormatado - reagente.volumeInicial;
+                    const novoVolumeAtual = parseFloat((reagente.volume + diferencaVolume).toFixed(3));
                     
                     // Atualiza no Firebase
                     db.collection('reagentes').doc(id).update({
                         nome: novoNome,
                         volume: novoVolumeAtual,
-                        volumeInicial: novoVolume,
+                        volumeInicial: novoVolumeFormatado,
                         vencimento: novoVencimento,
-                        reducao: novoReducao
+                        reducao: novoReducaoFormatada
                     })
                     .then(() => {
                         alert('Reagente atualizado com sucesso!');
@@ -236,25 +240,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const useParam = urlParams.get('use');
     
     if (useParam) {
+        // Reduz o volume do reagente com precisão decimal
         db.collection('reagentes').doc(useParam).get()
         .then(doc => {
-          if (doc.exists) {
-            const reagente = doc.data();
-            const novoVolume = parseFloat((reagente.volume - reagente.reducao).toFixed(3));
-            
-            if (novoVolume >= 0) {
-              db.collection('reagentes').doc(useParam).update({
-                volume: novoVolume
-              })
-              .then(() => {
-                alert(`Uso de ${reagente.reducao.toFixed(3)} ml registrado para ${reagente.nome}. Volume restante: ${novoVolume.toFixed(3)} ml`);
-                window.history.replaceState({}, document.title, window.location.pathname);
-              });
-            } else {
-              alert('Volume insuficiente para uso!');
-              window.history.replaceState({}, document.title, window.location.pathname);
+            if (doc.exists) {
+                const reagente = doc.data();
+                const novoVolume = parseFloat((reagente.volume - reagente.reducao).toFixed(3));
+                
+                if (novoVolume >= 0) {
+                    db.collection('reagentes').doc(useParam).update({
+                        volume: novoVolume
+                    })
+                    .then(() => {
+                        alert(`Uso de ${reagente.reducao.toFixed(3)} ml registrado para ${reagente.nome}. Volume restante: ${novoVolume.toFixed(3)} ml`);
+                        // Remove o parâmetro da URL sem recarregar a página
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    })
+                    .catch(error => {
+                        console.error('Erro ao atualizar volume: ', error);
+                    });
+                } else {
+                    alert('Volume insuficiente para uso!');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
             }
-          }
+        })
+        .catch(error => {
+            console.error('Erro ao buscar reagente: ', error);
         });
-      }
+    }
 });

@@ -27,6 +27,11 @@ body {
     color: white;
 }
 
+/* Melhoria para exibição de valores decimais */
+.table td {
+    font-family: 'Courier New', monospace;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
     .table-responsive {
@@ -53,4 +58,10 @@ body {
 #qrCodeImage img {
     display: block;
     margin: 0 auto;
+}
+
+/* Destaque para valores decimais */
+.volume-display {
+    font-weight: bold;
+    color: #0d6efd;
 }
